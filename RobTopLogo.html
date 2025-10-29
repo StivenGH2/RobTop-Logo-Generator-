@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador Piskel con Fuentes</title>
+<style>
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #222;
+    color: #fff;
+    font-family: sans-serif;
+}
+
+#textInput {
+    font-size: 24px;
+    padding: 10px;
+    width: 400px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#fontSelector {
+    font-size: 20px;
+    margin-bottom: 20px;
+    padding: 5px;
+}
+
+tspan { white-space: pre }
+
+.text-fill {
+    font-size: 320px;
+    font-weight: 800;
+    fill: #000000;
+    paint-order: stroke fill markers;
+}
+
+.stroke1 { stroke: url(#strokeGrad2); stroke-width: 160; stroke-linejoin: round; }
+.stroke2 { stroke: url(#strokeGrad1); stroke-width: 100; stroke-linejoin: round; }
+
+.color-right-down { fill: #fcf088; }
+.color-left-up { fill: #f15d05; }
+.color-black-top { fill: #000000; }
+
+</style>
+</head>
+<body>
+
+<input type="text" id="textInput" placeholder="Escribe tu texto aquí">
+<select id="fontSelector">
+    <option value="Pusab">Pusab</option>
+    <option value="'Open Sans', sans-serif">Open Sans</option>
+    <option value="'Lora', serif">Lora</option>
+    <option value="'Oxygene1'">Oxygene1</option>
+</select>
+
+<svg id="piskelSVG" xmlns="http://www.w3.org/2000/svg" version="1.2" viewBox="0 0 3840 2160" width="3840" height="2160">
+<defs>
+<linearGradient id="strokeGrad1" x1="0%" y1="100%" x2="0%" y2="0%">
+    <stop offset="0%" stop-color="#ff8201" />
+    <stop offset="100%" stop-color="#ffb504" />
+</linearGradient>
+<linearGradient id="strokeGrad2" x1="0%" y1="100%" x2="0%" y2="0%">
+    <stop offset="0%" stop-color="#f15d05" />
+    <stop offset="100%" stop-color="#fcf088" />
+</linearGradient>
+</defs>
+
+<text id="stroke1Text" x="1920" y="1080" text-anchor="middle" dominant-baseline="middle" class="text-fill stroke1"><tspan>Piskel</tspan></text>
+<text id="stroke2Text" x="1920" y="1080" text-anchor="middle" dominant-baseline="middle" class="text-fill stroke2"><tspan>Piskel</tspan></text>
+<text id="mainText" x="1920" y="1080" text-anchor="middle" dominant-baseline="middle" class="text-fill"><tspan>Piskel</tspan></text>
+<text id="rightDownText" x="1925" y="1085" text-anchor="middle" dominant-baseline="middle" class="text-fill color-right-down"><tspan>Piskel</tspan></text>
+<text id="leftUpText" x="1915" y="1075" text-anchor="middle" dominant-baseline="middle" class="text-fill color-left-up"><tspan>Piskel</tspan></text>
+<text id="blackTopText" x="1920" y="1080" text-anchor="middle" dominant-baseline="middle" class="text-fill color-black-top"><tspan>Piskel</tspan></text>
+</svg>
+
+<button id="copySVGButton" style="background: none; border: none; cursor: pointer; margin-top: 20px;">
+    <img src="btn_download.png" alt="Copiar SVG" style="height:48px;">
+</button>
+
+<script>
+const textInput = document.getElementById('textInput');
+const fontSelector = document.getElementById('fontSelector');
+const textElements = [
+    document.getElementById('mainText'),
+    document.getElementById('rightDownText'),
+    document.getElementById('leftUpText'),
+    document.getElementById('blackTopText'),
+    document.getElementById('stroke1Text'),
+    document.getElementById('stroke2Text')
+];
+
+// Ajusta el tamaño del texto según el largo
+function adjustFontSize() {
+    const svgWidth = 3840; // actualizado para coincidir con el nuevo ancho
+    const textLength = textElements[0].getComputedTextLength();
+    let fontSize = 320;
+    if(textLength > svgWidth - 100) fontSize = fontSize * (svgWidth - 100) / textLength;
+    textElements.forEach(el => el.style.fontSize = fontSize + 'px');
+}
+
+// Inicializa texto desde URL
+function initText() {
+    const params = new URLSearchParams(window.location.search);
+    const initialText = params.get('text') || 'Piskel';
+    textElements.forEach(el => el.querySelector('tspan').textContent = initialText);
+    textInput.value = initialText;
+    adjustFontSize();
+}
+
+// Aplica fuente a todas las capas
+function applyFont(font) {
+    textElements.forEach(el => el.style.fontFamily = font);
+}
+
+// Actualiza URL sin recargar
+function updateURL(text) {
+    const newUrl = `${window.location.pathname}?text=${encodeURIComponent(text)}`;
+    history.replaceState(null, '', newUrl);
+}
+
+// Inicialización
+initText();
+applyFont(fontSelector.value);
+
+// Eventos
+textInput.addEventListener('input', () => {
+    const value = textInput.value || 'Piskel';
+    textElements.forEach(el => el.querySelector('tspan').textContent = value);
+    adjustFontSize();
+    updateURL(value);
+});
+
+fontSelector.addEventListener('change', () => {
+    applyFont(fontSelector.value);
+});
+
+document.getElementById('copySVGButton').addEventListener('click', async () => {
+    // Copia la imagen PNG del SVG con todos los textos y estilos actuales
+    const svg = document.getElementById('piskelSVG');
+
+    // Clonar el SVG para no alterar el original
+    const clone = svg.cloneNode(true);
+
+    // Recopilar estilos <style> del documento y añadirlos dentro del SVG clonado
+    let css = '';
+    document.querySelectorAll('style').forEach(s => css += s.textContent + '\n');
+    const styleElem = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    // Encapsular en CDATA para mayor compatibilidad
+    styleElem.textContent = '<![CDATA[\n' + css + '\n]]>';
+    clone.insertBefore(styleElem, clone.firstChild);
+
+    // Serializar SVG clonado
+    const serializer = new XMLSerializer();
+    let svgText = serializer.serializeToString(clone);
+    svgText = '<?xml version="1.0" standalone="no"?>\n' + svgText;
+
+    const svgBlob = new Blob([svgText], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async function() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = svg.width.baseVal.value;
+            canvas.height = svg.height.baseVal.value;
+            const ctx = canvas.getContext('2d');
+
+            // Pintar SVG en canvas
+            ctx.drawImage(img, 0, 0);
+
+            // Convertir a PNG y copiar al portapapeles
+            canvas.toBlob(async function(blob) {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ [blob.type]: blob })
+                    ]);
+                    document.getElementById('copySVGButton').style.opacity = '0.7';
+                    setTimeout(() => {
+                        document.getElementById('copySVGButton').style.opacity = '1';
+                    }, 500);
+                } catch (e) {
+                    alert('No se pudo copiar la imagen. Tu navegador puede no soportar esta función.');
+                }
+            }, 'image/png');
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+    };
+    img.onerror = function() {
+        alert('Error al procesar la imagen SVG.');
+        URL.revokeObjectURL(url);
+    };
+    img.src = url;
+});
+
+</script>
+
+</body>
+</html>
